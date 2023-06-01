@@ -1,0 +1,50 @@
+body {
+    /*background-color: rgba(58, 183, 24, 0.32);*/
+}
+
+.col-6 {
+    padding-top: 15%;
+}
+
+.col-6 h1 {
+    margin-bottom: 50px;
+}
+
+#map {
+    width: 110%;
+    height: 700px;
+}
+
+.ava {
+    margin: 20px 10px 20px 20px;
+    border-radius: 50%;
+    width: 70px;
+    height: 70px;
+}
+
+.my_button {
+    margin: 10px;
+}
+
+.my_text {
+    margin-bottom: 24px;
+}
+
+.map {
+    margin-bottom: auto;
+    margin-top: auto;
+}
+
+.login_title {
+    margin-bottom: 24px;
+    font-size: 36px;
+}
+
+.login_description {
+    font-size: 18px;
+    margin-bottom: 24px;
+}
+
+.login_text {
+    margin: auto;
+}
