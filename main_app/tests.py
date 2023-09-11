@@ -1,55 +1,64 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from main_app.models import Memory
+from django.contrib.gis.geos import Point
 
 
 class MemoriesViewTestCase(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        User.objects.create(first_name='John', last_name='Smith',
-                            username='testuser', password='12345')
+    def setUp(self):
+        self.user = User.objects.create_user(username='test_user', password='test_password')
+        self.client.force_login(self.user)
+        self.place = Memory.objects.create(title='Test title', description='Content test',
+                                           author=self.user, location=Point(60, 60))
+        self.place_data = {
+            'author': self.user,
+            'title': 'Beautifup place',
+            'description': 'Wow, this was amazing!',
+            'location': Point(60, 60)
+        }
 
-    def test_view_url_exists_for_login_user(self):
-        self.client.force_login(User.objects.get(username='testuser'))
-        responce = self.client.get('/memories/')
-        self.assertEqual(responce.status_code, 200)
+    def test_main_page_authenticated(self):
+        response = self.client.get(reverse('memories'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'memories.html')
 
-    def test_view_url_does_not_exists_for_no_login_user(self):
-        responce = self.client.get('/memories/')
-        self.assertNotEqual(responce.status_code, 200)
+    def test_login_page_authenticated(self):
+        response = self.client.get(reverse('sign_in'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'login.html')
 
-    def test_view_url_accessible_by_name(self):
-        self.client.force_login(User.objects.get(username='testuser'))
-        responce = self.client.get(reverse('memories'))
-        self.assertEqual(responce.status_code, 200)
+    def test_add_memory_page_authenticated(self):
+        response = self.client.get(reverse('memory_create'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'addmemory.html')
 
-    def test_view_uses_correct_template(self):
-        self.client.force_login(User.objects.get(username='testuser'))
-        responce = self.client.get(reverse('memories'))
-        self.assertEqual(responce.status_code, 200)
+    def test_add_memory_authenticated(self):
+        response = self.client.post(reverse('memory_create'), data=self.place_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(Memory.objects.values()), 1)
+        self.assertTemplateUsed(response, 'addmemory.html')
 
-        self.assertTemplateUsed(responce, 'main.html')
+    def test_main_page_no_authenticated(self):
+        self.client.logout()
+        response = self.client.get(reverse('memories'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, '/sign-in/?next=/memories/')
 
+    def test_login_page_no_authenticated(self):
+        self.client.logout()
+        response = self.client.get(reverse('sign_in'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'login.html')
 
-class MemoriesCreateViewTestCase(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        User.objects.create(first_name='John', last_name='Smith',
-                            username='testuser', password='12345')
+    def test_add_memory_page_no_authenticated(self):
+        self.client.logout()
+        response = self.client.get(reverse('memory_create'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, '/sign-in/?next=/add-memory/')
 
-    def test_view_url_exists(self):
-        self.client.force_login(User.objects.get(username='testuser'))
-        responce = self.client.get('/add-memory/')
-        self.assertEqual(responce.status_code, 200)
-
-    def test_view_url_accessible_by_name(self):
-        self.client.force_login(User.objects.get(username='testuser'))
-        responce = self.client.get(reverse('memory_create'))
-        self.assertEqual(responce.status_code, 200)
-
-    def test_uses_correct_template(self):
-        self.client.force_login(User.objects.get(username='testuser'))
-        responce = self.client.get(reverse('memory_create'))
-        self.assertEqual(responce.status_code, 200)
-
-        self.assertTemplateUsed(responce, 'addmemory.html')
+    def test_add_memory_no_authenticated(self):
+        self.client.logout()
+        response = self.client.post(reverse('memory_create'), data=self.place_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, '/sign-in/?next=/add-memory/')
